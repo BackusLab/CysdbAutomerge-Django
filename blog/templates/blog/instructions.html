@@ -1,0 +1,38 @@
+{% extends 'blog/base.html' %}
+{% block title %}How to Use CysDB Automerge{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="main-content">
+        <h1 class="mb-4">How to Use CysDB Automerge</h1>
+        <p class="lead">Follow these steps to upload your protein data and manage it effectively.</p>
+        
+        <h2 class="mt-4">Uploading a CSV File</h2>
+        <p>To upload a CSV file, navigate to the <a href="{% url 'homepage' %}">Upload Page</a> and follow these steps:</p>
+        <ol>
+            <li>Click on the "Choose File" button and select your CSV file.</li>
+            <li>Click the "Upload" button to submit your file.</li>
+            <li>Once the upload is complete, you will be navigated to different page to have an overview of the csv uploaded.</li>
+            <li>You can then download your data, which will be saved as a .pdf file</li>
+        </ol>
+        
+        <h2 class="mt-4">Managing Your Data</h2>
+        <p>After uploading, you can manage your data through the admin interface:</p>
+        <ol>
+            <li>Go to the <a href="{% url 'admin:index' %}">Admin Page</a> and log in with your credentials.</li>
+            <li>Click on the "Cysdb" section to view and manage your protein entries.</li>
+            <li>You can add, edit, or delete entries as needed.</li>
+        </ol>
+
+        <h2 class="mt-4">Viewing Data</h2>
+        <p>To view the data you have uploaded, you can:</p>
+        <ol>
+            <li>Navigate to the <a href="{% url 'admin:index' %}">Admin Page</a> to see an overview of all proteins uploaded.</li>
+            <li>Use the search functionality to find specific proteins.</li>
+        </ol>
+
+        <h2 class="mt-4">Need Help?</h2>
+        <p>If you need further assistance, refer to our <a href="https://docs.google.com/document/d/1ioEg9RHG_ge4H0m-NuyDhI-QQ3YRXZo_co0JWd5O54U/edit?usp=sharing">Instruction Manual</a>.</p>
+    </div>
+</div>
+{% endblock %}
