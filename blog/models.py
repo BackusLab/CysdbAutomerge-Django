@@ -30,3 +30,22 @@ class Cysdb(models.Model):
     hyperreactive = models.CharField(max_length=20,null=True,)
     hyperreactive_datasets = models.CharField(max_length=20,null=True,)
     redox_datasets = models.CharField(max_length=20,null=True,)
+
+class Hyperreactive(models.Model):
+    file = models.ForeignKey(
+        'UploadFile', 
+        on_delete=models.CASCADE
+    )
+    proteinid = models.CharField(max_length=20,)
+    cysteineid = models.CharField(max_length=20,)
+    resid = models.CharField(max_length=20)
+    weerapana_mean = models.FloatField(null=True, )
+    palafox_mean = models.FloatField(null=True,)
+    vinogradova_mean = models.FloatField(null=True,)
+    cysdb_mean = models.FloatField(null=True,)
+    cysdb_median = models.FloatField(null=True,)
+    cysdb_stdev = models.FloatField(null=True,)
+    cysdb_reactivity_category = models.CharField(max_length=5,)
+    hyperreactive = models.CharField(max_length= 20,)
+    castellon_mean = models.FloatField(null=True,)
+                
