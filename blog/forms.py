@@ -2,12 +2,16 @@ from django import forms
 from .models import UploadFile
 
 TABLE_CHOICES = [
-    ('cysdb', 'Cysdb'),
+    ('ligandable', 'Ligandable'),
     ('hyperreactive', 'Hyperreactive'),
 ]
 
 class UploadFileForm(forms.ModelForm):
-    table = forms.ChoiceField(choices=TABLE_CHOICES, required=True)
+    table = forms.ChoiceField(choices=TABLE_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}), required= True)
+
     class Meta:
         model = UploadFile
-        fields = ('upload', 'table')
+        fields = ('table', 'upload')
+        widgets = {
+            'upload': forms.FileInput(attrs={'class': 'form-control-file'}),
+        }

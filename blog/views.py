@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
 from .forms import UploadFileForm
-from .models import Cysdb, UploadFile, Hyperreactive
+from .models import Ligandable, UploadFile, Hyperreactive
 from django.http import HttpResponse
 import logging
 import csv
@@ -24,7 +24,7 @@ def handle_upload(request):
         file = UploadFile.objects.last()
         table = form.cleaned_data['table']
         dataset = request.FILES['upload']
-        if table == 'cysdb':
+        if table == 'ligandable':
             return process_cysdb_file(request, dataset, file)
         elif table == 'hyperreactive':
             return process_hyperreactive_file(request, dataset, file)
@@ -35,22 +35,22 @@ def process_cysdb_file(request, dataset, file):
     decoded_dataset = dataset.read().decode('utf-8').splitlines()
     reader = csv.DictReader(decoded_dataset)
     for row in reader:
-        for i in Cysdb._meta.get_fields():
+        for i in Ligandable._meta.get_fields():
             if i.name not in row.keys():
                 row[i.name] = ''
 
-        if Cysdb.objects.filter(cysteineid=row['cysteineid']).exists() == False:
-            cysdb_data = Cysdb.objects.create(file = file, level= row['level'], proteinid = row['proteinid'], cysteineid = row['cysteineid'],
+        if Ligandable.objects.filter(cysteineid=row['cysteineid']).exists() == False:
+            cysdb_data = Ligandable.objects.create(file = file, level= row['level'], proteinid = row['proteinid'], cysteineid = row['cysteineid'],
                                             resid = row['resid'], datasetid = row['datasetid'], identified = row['identified'], 
                                             ligandable_datasets = row['ligandable_datasets'], identified_datasets = row['identified_datasets'],
                                             cell_line_datasets = row['cell_line_datasets'], ligandable = row['ligandable'], hyperreactive = row['hyperreactive'], 
                                             hyperreactive_datasets= row['hyperreactive_datasets'], redox_datasets = row['redox_datasets'])
             cysdb_data.save()
         else:
-            cysdb_last = Cysdb.objects.filter(cysteineid = row['cysteineid']).last()
+            cysdb_last = Ligandable.objects.filter(cysteineid = row['cysteineid']).last()
             identified_datasets = cysdb_last.identified_datasets.split(';')
             if row['datasetid'] not in identified_datasets:
-                queryset = Cysdb.objects.filter(cysteineid = row['cysteineid']).values()
+                queryset = Ligandable.objects.filter(cysteineid = row['cysteineid']).values()
                 new_identified = cysdb_last.identified_datasets + ';' + str(row['datasetid'])
                 queryset.update(identified_datasets = new_identified)
             if row['ligandable'] != 'yes':
@@ -59,10 +59,10 @@ def process_cysdb_file(request, dataset, file):
     file_path = os.path.join(settings.BASE_DIR, 'blog', 'v1p5_data', '240419_cysdb_id_v1p5.csv')
     file_instance, __ = UploadFile.objects.get_or_create(upload=file_path)
 
-    last_30 = Cysdb.objects.order_by('id')[:50]
-    merged = Cysdb.objects.filter(file = file) | Cysdb.objects.filter(file = file_instance)
+    last_30 = Ligandable.objects.order_by('id')[:50]
+    merged = Ligandable.objects.filter(file = file) | Ligandable.objects.filter(file = file_instance)
 
-    return render(request,'blog/configure_merge.html', {'cysdb_file': file, 'last_30': last_30, 'merged_dataset': merged, 'table': 'cysdb'})
+    return render(request,'blog/configure_merge.html', {'cysdb_file': file, 'last_30': last_30, 'merged_dataset': merged, 'table': 'ligandable'})
 
 def process_hyperreactive_file(request, dataset, file):
     decoded_dataset = dataset.read().decode('utf-8').splitlines()
@@ -134,10 +134,10 @@ def instructions(request):
 def download_merged_dataset(request, table):
     # Get the merged dataset
     file = UploadFile.objects.last()
-    if table == 'cysdb':
+    if table == 'ligandable':
         file_path = os.path.join(settings.BASE_DIR, 'blog', 'v1p5_data', '240419_cysdb_id_v1p5.csv')
         file_instance, __ = UploadFile.objects.get_or_create(upload=file_path)
-        merged_dataset = Cysdb.objects.filter(file=file) | Cysdb.objects.filter(file=file_instance)
+        merged_dataset = Ligandable.objects.filter(file=file) | Ligandable.objects.filter(file=file_instance)
     else:
         merged_dataset = Hyperreactive.objects.filter(file=file)
 
@@ -147,8 +147,8 @@ def download_merged_dataset(request, table):
 
     writer = csv.writer(response)
     
-    if table == 'cysdb':
-        header = [field.name for field in Cysdb._meta.get_fields() if field.concrete]
+    if table == 'ligandable':
+        header = [field.name for field in Ligandable._meta.get_fields() if field.concrete]
     elif table == 'hyperreactive':
         header = [field.name for field in Hyperreactive._meta.get_fields() if field.concrete]
     

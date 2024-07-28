@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import UploadFile, Cysdb, Hyperreactive
+from .models import UploadFile, Ligandable, Hyperreactive
 
-class CysdbDisplay(admin.ModelAdmin):
+class LigandableDisplay(admin.ModelAdmin):
     list_display = ('level', 'proteinid', 'cysteineid', 'ligandable', 'ligandable_datasets', 'resid', 'identified', 'identified_datasets',
                      'datasetid','cell_line_datasets', 'hyperreactive', 'hyperreactive_datasets', 'redox_datasets')
     search_fields = ['proteinid', 'cysteineid']
@@ -13,4 +13,4 @@ class HyperreactiveDisplay(admin.ModelAdmin):
 
 admin.site.register(UploadFile)
 admin.site.register(Hyperreactive, HyperreactiveDisplay)
-admin.site.register(Cysdb, CysdbDisplay)
+admin.site.register(Ligandable, LigandableDisplay)

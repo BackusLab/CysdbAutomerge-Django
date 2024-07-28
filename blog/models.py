@@ -10,7 +10,7 @@ class UploadFile(models.Model):
     upload = models.FileField(upload_to=directory)
 
 
-class Cysdb(models.Model):
+class Ligandable(models.Model):
     file = models.ForeignKey(
         'UploadFile',
         on_delete=models.CASCADE,
