@@ -78,6 +78,9 @@
             <th>Cysdb Reactivity Category</th>
             <th>Hyperreactive</th>
             <th>Castellon Mean</th>
+            {% for key in new_means %}
+              <th>{{ key }}</th>
+            {% endfor %}
           </tr>
         </thead>
         <tbody>
@@ -95,6 +98,9 @@
             <td>{{ row.cysdb_reactivity_category }}</td>
             <td>{{ row.hyperreactive }}</td>
             <td>{{ row.castellon_mean }}</td>
+            {% for key, val in row.new_means.items %}
+              <td>{{ val }}</td>
+            {% endfor %}
           </tr>
           {% endfor %}
         </tbody>

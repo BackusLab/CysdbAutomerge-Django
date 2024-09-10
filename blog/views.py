@@ -6,6 +6,7 @@ from django.http import HttpResponse
 import logging
 import csv
 import os
+import statistics
 logger = logging.getLogger('django')
 
 
@@ -67,55 +68,46 @@ def process_cysdb_file(request, dataset, file):
 def process_hyperreactive_file(request, dataset, file):
     decoded_dataset = dataset.read().decode('utf-8').splitlines()
     reader = csv.DictReader(decoded_dataset)
+    
     for row in reader:
-        for i in Hyperreactive._meta.get_fields():
-            if i.name not in row.keys():
-                if i.get_internal_type() == 'FloatField':
-                    row[i.name] = 0.0
-                else: 
-                    row[i.name] = ''
-            if i.get_internal_type() == 'FloatField':
-                if row[i.name] == '':
-                    row[i.name] = None
-                else:
-                    row[i.name] = float(row[i.name])
-
+        known_fields = {field.name for field in Hyperreactive._meta.get_fields()}
+        hyperreactive_data = {}
+        new_means = {}
+        for key, value in row.items():
+            if (key in known_fields):
+                hyperreactive_data[key] = value
+            else:
+                new_means[key] = float(value) if value else 0.0
         
         if Hyperreactive.objects.filter(cysteineid=row['cysteineid']).exists() == False:
             cysdb_data = Hyperreactive.objects.create(
-            file=file, proteinid=row['proteinid'],cysteineid=row['cysteineid'],resid=row['resid'],
-            weerapana_mean=row['weerapana_mean'],palafox_mean=row['palafox_mean'], vinogradova_mean = row['vinogradova_mean'], cysdb_mean = row['cysdb_mean'], 
-            cysdb_median = row['cysdb_median'],cysdb_stdev = row['cysdb_stdev'], cysdb_reactivity_category = row['cysdb_reactivity_category'], 
-            hyperreactive = row['hyperreactive'], castellon_mean = row['castellon_mean']) 
+                file=file,
+                **hyperreactive_data,
+                new_means = new_means
+            )
+
             cysdb_data.save()
-        else:
-            cysteine = Hyperreactive.objects.filter(cysteineid = row['cysteineid'])
-            cysteine_count = len(cysteine)
-            row['cysdb_mean'] = update_mean(cysteine_count, row['cysdb_mean'], cysteine.all().values()[0]['cysdb_mean'])
-            row['castellon_mean'] = update_mean(cysteine_count, row['castellon_mean'], cysteine.all().values()[0]['castellon_mean'])
-            row['vinogradova_mean']= update_mean(cysteine_count, row['vinogradova_mean'], cysteine.all().values()[0]['vinogradova_mean'])
-            row['weerapana_mean']= update_mean(cysteine_count, row['weerapana_mean'], cysteine.all().values()[0]['weerapana_mean'])
-            row['palafox_mean']= update_mean(cysteine_count, row['palafox_mean'], cysteine.all().values()[0]['palafox_mean'])
             
-    #file_path = os.path.join(settings.BASE_DIR, 'blog', 'v1p5_data', '240419_cysdb_id_v1p5.csv')
-    #file_instance, __ = UploadFile.objects.get_or_create(upload=file_path)
+        else:
+            cysdb_data = Hyperreactive.objects.filter(cysteineid = row['cysteineid']).get()
+            cysdb_data.new_means.update(new_means)
+            means = list(cysdb_data.new_means.values()) + list(filter(None, [cysdb_data.castellon_mean, cysdb_data.vinogradova_mean, cysdb_data.weerapana_mean, cysdb_data.palafox_mean]))
+            cysdb_data.cysdb_mean= statistics.mean(means)
+            cysdb_data.cysdb_median = statistics.median(means)
+            if len(means) > 1:
+                cysdb_data.cysdb_stdev = statistics.stdev(means)
+            cysdb_data.hyperreactive='yes'
+            cysdb_data.save()
 
     last_30 = Hyperreactive.objects.order_by('id')[:50]
+    new_means_keys = last_30.values_list('new_means', flat=True)
+    keys = {key for obj in new_means_keys for key in obj.keys()}
+
     merged = Hyperreactive.objects.filter(file = file)
     #merged = Hyperreactive.objects.filter(file = file) | Cysdb.objects.filter(file = file_instance)
 
-    return render(request,'blog/configure_merge.html', {'cysdb_file': file, 'last_30': last_30, 'merged_dataset': merged, 'table': 'hyperreactive'})
-    ### FIX THIS LATERRRR
+    return render(request,'blog/configure_merge.html', {'cysdb_file': file, 'last_30': last_30, 'merged_dataset': merged, 'table': 'hyperreactive', 'new_means': keys})
 
-
-
-def update_mean(count, new_val, old_val):
-    if new_val == None:
-        return old_val
-    if old_val == None:
-        return new_val
-
-    return (old_val * count + new_val)/(count + 1)
 
 def upload_file(request):
     if request.method == 'POST':
@@ -149,12 +141,21 @@ def download_merged_dataset(request, table):
     
     if table == 'ligandable':
         header = [field.name for field in Ligandable._meta.get_fields() if field.concrete]
-    elif table == 'hyperreactive':
-        header = [field.name for field in Hyperreactive._meta.get_fields() if field.concrete]
-    
-    writer.writerow(header)
+        writer.writerow(header)
+        for record in merged_dataset:
+            writer.writerow([getattr(record, field) for field in header])
 
-    for record in merged_dataset:
-        writer.writerow([getattr(record, field) for field in header])
+    elif table == 'hyperreactive':
+        field_names = [field.name for field in Hyperreactive._meta.fields if field.name != 'new_means']
+        extra_field_names = set()
+        for data in merged_dataset:
+            extra_field_names.update(data.new_means.keys())
+        writer.writerow(field_names + list(extra_field_names))
+        for data in merged_dataset:
+            row = [getattr(data, field) for field in field_names]
+            # Add the dynamic fields
+            for field in extra_field_names:
+                row.append(data.new_means.get(field, ''))  # default to empty if not present
+            writer.writerow(row)
 
     return response
