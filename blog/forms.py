@@ -4,6 +4,7 @@ from .models import UploadFile
 TABLE_CHOICES = [
     ('ligandable', 'Ligandable'),
     ('hyperreactive', 'Hyperreactive'),
+    ('identified', 'Identified'),
 ]
 
 class UploadFileForm(forms.ModelForm):

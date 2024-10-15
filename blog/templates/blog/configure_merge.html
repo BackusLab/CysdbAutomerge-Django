@@ -20,7 +20,7 @@
         <a href="{% url 'download_merged_dataset' table %}" class="btn btn-primary mb-3">Download Merged Dataset</a>
         
 
-            {% if table == 'ligandable'%}
+            {% if table == 'identified'%}
             <div class="table-responsive">
               <table class="table table-striped table-bordered">
             <thead class="thead-dark">
@@ -99,6 +99,51 @@
             <td>{{ row.hyperreactive }}</td>
             <td>{{ row.castellon_mean }}</td>
             {% for key, val in row.new_means.items %}
+              <td>{{ val }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% elif table == 'ligandable' %}
+        <div class="table-responsive">
+          <table class="table table-striped table-bordered">
+        <thead class="thead-dark">
+          <tr>
+            <th>Protein ID</th>
+            <th>Cysteine ID</th>
+            <th>ResID</th>
+            <th>Ligandable</th>
+            {% for key in datasets %}
+            <th>{{ key }}</th>
+            {% endfor %}
+            <th>Acrylamide</th>
+            <th>Bromoacetamide</th>
+            <th>Chloroacetamide</th>
+            <th>Dimethylfumarate</th>
+            <th>Other</th>
+            {% for key in compounds %}
+              <th>{{ key }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in last_30 %}
+          <tr>
+            <td>{{ row.proteinid }}</td>
+            <td>{{ row.cysteineid }}</td>
+            <td>{{ row.resid }}</td>
+            <td>{{ row.ligandable }}</td>
+            {% for key, val in row.dataset.items %}
+            <td>{{ val }}</td>
+            {% endfor %}
+            <td>{{ row.acrylamide }}</td>
+            <td>{{ row.bromoacetamide }}</td>
+            <td>{{ row.chloroacetamide }}</td>
+            <td>{{ row.dimethylfumarate }}</td>
+            <td>{{ row.other }}</td>
+            {% for key, val in row.compounds.items %}
               <td>{{ val }}</td>
             {% endfor %}
           </tr>

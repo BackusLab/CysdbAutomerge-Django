@@ -1,3 +1,2 @@
-logs/debug.log filter=lfs diff=lfs merge=lfs -text
 v1p5_data filter=lfs diff=lfs merge=lfs -text
 blog/v1p5_data filter=lfs diff=lfs merge=lfs -text

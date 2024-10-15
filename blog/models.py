@@ -10,7 +10,7 @@ class UploadFile(models.Model):
     upload = models.FileField(upload_to=directory)
 
 
-class Ligandable(models.Model):
+class Identified(models.Model):
     file = models.ForeignKey(
         'UploadFile',
         on_delete=models.CASCADE,
@@ -20,12 +20,12 @@ class Ligandable(models.Model):
     cysteineid = models.CharField(max_length=20,)
     resid = models.CharField(max_length=20)
     datasetid = models.CharField(max_length=20,)
-    identified = models.CharField(max_length=20,
+    identified = models.CharField(max_length=3,
     )
     identified_datasets = models.CharField(max_length=20,
     )
     ligandable_datasets = models.CharField(max_length=20,)
-    ligandable = models.CharField(max_length=20,)
+    ligandable = models.CharField(max_length=3,)
     cell_line_datasets = models.CharField(max_length=20, )
     hyperreactive = models.CharField(max_length=20,null=True,)
     hyperreactive_datasets = models.CharField(max_length=20,null=True,)
@@ -49,4 +49,22 @@ class Hyperreactive(models.Model):
     hyperreactive = models.CharField(max_length= 20,)
     castellon_mean = models.FloatField(null=True,)
     new_means = models.JSONField(default=dict)
+
+class Ligandable(models.Model):
+    file = models.ForeignKey(
+        'UploadFile', 
+        on_delete=models.CASCADE
+    )
+    proteinid = models.CharField(max_length=20,)
+    cysteineid = models.CharField(max_length=20,)
+    resid = models.CharField(max_length=20)
+    ligandable = models.CharField(max_length=3,)
+    datasets = models.JSONField(default=dict)
+    acrylamide = models.CharField(max_length=3, null=True)
+    bromoacetamide = models.CharField(max_length=3,null=True)
+    chloroacetamide =  models.CharField(max_length=3,null=True)
+    dimethylfumarate = models.CharField(max_length=3,null=True)
+    other =  models.CharField(max_length=3,null=True)
+    compounds = models.JSONField(default=dict)
+
                 
