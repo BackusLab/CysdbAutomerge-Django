@@ -14,24 +14,14 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('Initial data already loaded'))
             return
 
-        file_path = os.path.join(settings.BASE_DIR, 'blog', 'v1p5_data', 'Cysdb Master Dataset.zip')
+        file_path = os.path.join(settings.BASE_DIR, 'blog', 'v1p5_data', 'cysdb_master.zip') 
         print('Loading Initial Data')
-        # with open(file_path, newline='') as csvfile:
-        #     reader = csv.DictReader(csvfile)
-        #     for row in reader:
-        #         for i in Identified._meta.get_fields():
-        #             if i.name not in row.keys():
-        #                 row[i.name] = ''
 
-        #         Identified.objects.create(file = file_instance, level= row['level'], proteinid = row['proteinid'], cysteineid = row['cysteineid'],
-        #                                             resid = row['resid'], datasetid = row['datasetid'], identified = row['identified'], 
-        #                                             ligandable_datasets = row['ligandable_datasets'], identified_datasets = row['identified_datasets'],
-        #                                             cell_line_datasets = row['cell_line_datasets'], ligandable = row['ligandable'], hyperreactive = row['hyperreactive'], 
-        #                                             hyperreactive_datasets= row['hyperreactive_datasets'], redox_datasets = row['redox_datasets'])
-        
         with zipfile.ZipFile(file_path, 'r') as zip_ref:
             for csv_filename in zip_ref.namelist():
                 print(f'Processing {csv_filename}')
+                if 'MACOSX' in csv_filename:
+                    continue
                 file_instance, created = UploadFile.objects.get_or_create(upload=csv_filename)
                 with zip_ref.open(csv_filename) as csvfile:
                     reader = csv.DictReader(csvfile.read().decode('utf-8').splitlines())
@@ -53,9 +43,12 @@ class Command(BaseCommand):
                             hyperreactive_data = {}
                             for key, value in row.items():
                                 if (key in known_fields):
-                                    hyperreactive_data[key] = value
-                            
-                            Hyperreactive.objects.create(file=file_instance,**hyperreactive_data)
+                                    if key == 'proteinid' or key == 'cysteineid' or key == 'resid' or key =='file':
+                                        hyperreactive_data[key] = value
+                                    else:
+                                        hyperreactive_data[key] = float(value) if value else None
+
+
                     elif 'ligandable' in csv_filename:
                         for row in reader:
                             known_fields = {field.name for field in Ligandable._meta.get_fields()}
@@ -83,5 +76,6 @@ class Command(BaseCommand):
                                     ligandable_data['other'] = 'yes'
                                     new_cols[key] = float(value) if value != '' else None
                             Ligandable.objects.create(file=file_instance,**ligandable_data, datasets = datasets, compounds = new_cols)
+                            
 
         self.stdout.write(self.style.SUCCESS('Successfully loaded initial data'))
