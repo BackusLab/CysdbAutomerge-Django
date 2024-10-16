@@ -8,6 +8,7 @@ import csv
 import os
 import statistics
 import re
+import zipfile
 logger = logging.getLogger('django')
 
 
@@ -60,8 +61,13 @@ def process_identified_file(request, dataset, file):
             if row['ligandable'] != 'yes':
                 row['ligandable'] = 'yes'
             
-    file_path = os.path.join(settings.BASE_DIR, 'blog', 'v1p5_data', '240419_cysdb_id_v1p5.csv')
-    file_instance, __ = UploadFile.objects.get_or_create(upload=file_path)
+    zip_path = os.path.join(settings.BASE_DIR, 'blog', 'v1p5_data', 'cysdb_master.zip') 
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        for csv_filename in zip_ref.namelist():
+            if 'MACOSX' in csv_filename:
+                continue
+            if 'id' in csv_filename:
+                file_instance, __ = UploadFile.objects.get_or_create(upload=csv_filename)
 
     last_30 = Identified.objects.order_by('id')[:50]
     merged = Identified.objects.filter(file = file) | Identified.objects.filter(file = file_instance)
@@ -102,12 +108,19 @@ def process_hyperreactive_file(request, dataset, file):
             cysdb_data.hyperreactive='yes'
             cysdb_data.save()
 
-    last_30 = Hyperreactive.objects.order_by('id')[:50]
     new_means_keys = last_30.values_list('new_means', flat=True)
     keys = {key for obj in new_means_keys for key in obj.keys()}
 
-    merged = Hyperreactive.objects.filter(file = file)
-    #merged = Hyperreactive.objects.filter(file = file) | Cysdb.objects.filter(file = file_instance)
+    zip_path = os.path.join(settings.BASE_DIR, 'blog', 'v1p5_data', 'cysdb_master.zip') 
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        for csv_filename in zip_ref.namelist():
+            if 'MACOSX' in csv_filename:
+                continue
+            if 'hyperreactive' in csv_filename:
+                file_instance, __ = UploadFile.objects.get_or_create(upload=csv_filename)
+
+    last_30 = Hyperreactive.objects.order_by('id')[:50]
+    merged = Hyperreactive.objects.filter(file = file) | Hyperreactive.objects.filter(file = file_instance)
 
     return render(request,'blog/configure_merge.html', {'cysdb_file': file, 'last_30': last_30, 'merged_dataset': merged, 'table': 'hyperreactive', 'new_means': keys})
 
@@ -156,18 +169,24 @@ def process_ligandable_file(request, dataset, file):
             
             cysdb_data.save()
 
-    last_30 = Ligandable.objects.order_by('id')[:50]
     compounds = last_30.values_list('compounds', flat=True)
     datasets = last_30.values_list('datasets', flat=True)
     compounds_keys = {key for obj in compounds for key in obj.keys()}
     datasets_keys = {key for obj in datasets for key in obj.keys()}
 
-    merged = Ligandable.objects.filter(file = file)
-    #merged = Hyperreactive.objects.filter(file = file) | Cysdb.objects.filter(file = file_instance)
+    zip_path = os.path.join(settings.BASE_DIR, 'blog', 'v1p5_data', 'cysdb_master.zip') 
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        for csv_filename in zip_ref.namelist():
+            if 'MACOSX' in csv_filename:
+                continue
+            if 'ligandable' in csv_filename:
+                file_instance, __ = UploadFile.objects.get_or_create(upload=csv_filename)
+
+    last_30 = Ligandable.objects.order_by('id')[:50]
+    merged = Ligandable.objects.filter(file = file) | Ligandable.objects.filter(file = file_instance)
 
     return render(request,'blog/configure_merge.html', {'cysdb_file': file, 'last_30': last_30, 'merged_dataset': merged, 'table': 'ligandable', 
                                                         'compounds': compounds_keys, 'datasets': datasets_keys})
-
 
 def upload_file(request):
     if request.method == 'POST':
