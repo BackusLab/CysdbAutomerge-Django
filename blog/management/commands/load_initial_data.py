@@ -37,7 +37,7 @@ class Command(BaseCommand):
                                                     cell_line_datasets = row['cell_line_datasets'], ligandable = row['ligandable'], hyperreactive = row['hyperreactive'], 
                                                     hyperreactive_datasets= row['hyperreactive_datasets'], redox_datasets = row['redox_datasets'])
                 # Process Hyperreactive file
-                    elif 'hyperreactive' in csv_filename:
+                    elif 'hyperreactive' in csv_filename and (Hyperreactive.objects.exists() == False):
                         for row in reader:
                             known_fields = {field.name for field in Hyperreactive._meta.get_fields()}
                             hyperreactive_data = {}
@@ -49,7 +49,7 @@ class Command(BaseCommand):
                                         hyperreactive_data[key] = float(value) if value else None
 
 
-                    elif 'ligandable' in csv_filename:
+                    elif 'ligandable' in csv_filename and (Ligandable.objects.exists() == False):
                         for row in reader:
                             known_fields = {field.name for field in Ligandable._meta.get_fields()}
                             ligandable_data = {}
@@ -79,7 +79,7 @@ class Command(BaseCommand):
 
 
 
-                    if 'redox' in csv_filename:
+                    if 'redox' in csv_filename and (Redox.objects.exists() == False):
                         for row in reader:
                             redox_data = {}
                             
