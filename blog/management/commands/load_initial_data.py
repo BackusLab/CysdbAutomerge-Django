@@ -4,13 +4,13 @@ import zipfile
 import re
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from blog.models import Identified, UploadFile, Hyperreactive, Ligandable
+from blog.models import Identified, UploadFile, Hyperreactive, Ligandable, Redox
 
 class Command(BaseCommand):
     help = 'Load initial data from CSV file'
 
     def handle(self, *args, **kwargs):
-        if Identified.objects.exists() and Hyperreactive.objects.exists() and Ligandable.objects.exists():
+        if Identified.objects.exists() and Hyperreactive.objects.exists() and Ligandable.objects.exists() and Redox.objects.exists():
             self.stdout.write(self.style.SUCCESS('Initial data already loaded'))
             return
 
@@ -76,6 +76,20 @@ class Command(BaseCommand):
                                     ligandable_data['other'] = 'yes'
                                     new_cols[key] = float(value) if value != '' else None
                             Ligandable.objects.create(file=file_instance,**ligandable_data, datasets = datasets, compounds = new_cols)
+
+
+
+                    if 'redox' in csv_filename:
+                        for row in reader:
+                            redox_data = {}
+                            
+                            for key, value in row.items():
+                                if key == "desai_percentage":
+                                    value = float(value)
+
+                                redox_data[key.strip()] = value.strip()
+                            
+                            Redox.objects.create(**redox_data, file=file_instance)
                             
 
         self.stdout.write(self.style.SUCCESS('Successfully loaded initial data'))

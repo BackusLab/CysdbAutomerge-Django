@@ -67,4 +67,12 @@ class Ligandable(models.Model):
     other =  models.CharField(max_length=3,null=True)
     compounds = models.JSONField(default=dict)
 
-                
+class Redox(models.Model):
+    file = models.ForeignKey(
+        'UploadFile',
+        on_delete=models.CASCADE
+    )
+    proteinid = models.CharField(max_length=20,)
+    cysteineid = models.CharField(max_length=20,)
+    resid = models.CharField(max_length=20)
+    desai_percentage = models.FloatField()
