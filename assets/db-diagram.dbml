@@ -54,3 +54,12 @@ Table ligandable {
   other VARCHAR(3) // Yes/No/Null
   compounds JSON // JSONField
 }
+
+Table redox {
+  id int [pk]
+  file int [ref: > upload_file.id] // Foreign key
+  proteinid VARCHAR(20)
+  cysteineid VARCHAR(20)
+  resid VARCHAR(20)
+  desai_percentage FLOAT
+}
