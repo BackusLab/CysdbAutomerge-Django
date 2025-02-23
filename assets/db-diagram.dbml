@@ -1,0 +1,56 @@
+Table upload_file {
+  id int [pk]
+  upload VARCHAR // Path to uploaded file
+}
+
+Table identified {
+  id int [pk]
+  file int [ref: > upload_file.id] // Foreign key
+  level VARCHAR(20)
+  proteinid VARCHAR(20)
+  cysteineid VARCHAR(20)
+  resid VARCHAR(20)
+  datasetid VARCHAR(20)
+  identified VARCHAR(3) // Yes/No
+  identified_datasets VARCHAR(20)
+  ligandable VARCHAR(3) // Yes/No
+  ligandable_datasets VARCHAR(20)
+  cell_line_datasets VARCHAR(20)
+  hyperreactive VARCHAR(20)
+  hyperreactive_datasets VARCHAR(20)
+  redox_datasets VARCHAR(20)
+}
+
+Table hyperreactive {
+  id int [pk]
+  file int [ref: > upload_file.id] // Foreign key
+  proteinid VARCHAR(20)
+  cysteineid VARCHAR(20)
+  resid VARCHAR(20)
+  weerapana_mean FLOAT
+  palafox_mean FLOAT
+  vinogradova_mean FLOAT
+  cysdb_mean FLOAT
+  cysdb_median FLOAT
+  cysdb_stdev FLOAT
+  cysdb_reactivity_category VARCHAR(5)
+  hyperreactive VARCHAR(20)
+  castellon_mean FLOAT
+  new_means JSON // JSONField
+}
+
+Table ligandable {
+  id int [pk]
+  file int [ref: > upload_file.id] // Foreign key
+  proteinid VARCHAR(20)
+  cysteineid VARCHAR(20)
+  resid VARCHAR(20)
+  ligandable VARCHAR(3) // Yes/No
+  datasets JSON // JSONField
+  acrylamide VARCHAR(3) // Yes/No/Null
+  bromoacetamide VARCHAR(3) // Yes/No/Null
+  chloroacetamide VARCHAR(3) // Yes/No/Null
+  dimethylfumarate VARCHAR(3) // Yes/No/Null
+  other VARCHAR(3) // Yes/No/Null
+  compounds JSON // JSONField
+}
