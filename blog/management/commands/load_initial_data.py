@@ -5,6 +5,7 @@ import re
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from blog.models import Identified, UploadFile, Hyperreactive, Ligandable, Redox
+from django.db import models
 
 class Command(BaseCommand):
     help = 'Load initial data from CSV file'
@@ -15,18 +16,19 @@ class Command(BaseCommand):
             return
 
         file_path = os.path.join(settings.BASE_DIR, 'blog', 'v1p5_data', 'cysdb_master.zip') 
-        print('Loading Initial Data')
+        self.stdout.write('Loading Initial Data')
 
         with zipfile.ZipFile(file_path, 'r') as zip_ref:
             for csv_filename in zip_ref.namelist():
-                print(f'Processing {csv_filename}')
+                self.stdout.write(f'Processing {csv_filename}')
                 if 'MACOSX' in csv_filename:
                     continue
                 file_instance, created = UploadFile.objects.get_or_create(upload=csv_filename)
                 with zip_ref.open(csv_filename) as csvfile:
                     reader = csv.DictReader(csvfile.read().decode('utf-8').splitlines())
-                # Process identified file
-                    if ('id' in csv_filename) and (Identified.objects.exists() == False):  
+
+                    # Process identified file
+                    if 'id' in csv_filename and not Identified.objects.exists():  
                         for row in reader:
                             for i in Identified._meta.get_fields():
                                 if i.name not in row.keys():
@@ -36,20 +38,22 @@ class Command(BaseCommand):
                                                     ligandable_datasets = row['ligandable_datasets'], identified_datasets = row['identified_datasets'],
                                                     cell_line_datasets = row['cell_line_datasets'], ligandable = row['ligandable'], hyperreactive = row['hyperreactive'], 
                                                     hyperreactive_datasets= row['hyperreactive_datasets'], redox_datasets = row['redox_datasets'])
-                # Process Hyperreactive file
-                    elif 'hyperreactive' in csv_filename and (Hyperreactive.objects.exists() == False):
+
+                    # Process hyperreactive file
+                    elif 'hyperreactive' in csv_filename and not Hyperreactive.objects.exists():
                         for row in reader:
                             known_fields = {field.name for field in Hyperreactive._meta.get_fields()}
                             hyperreactive_data = {}
                             for key, value in row.items():
                                 if (key in known_fields):
-                                    if key == 'proteinid' or key == 'cysteineid' or key == 'resid' or key =='file':
-                                        hyperreactive_data[key] = value
-                                    else:
+                                    if isinstance(Hyperreactive._meta.get_field(key), models.FloatField):
                                         hyperreactive_data[key] = float(value) if value else None
+                                    else:
+                                        hyperreactive_data[key] = value
+                            Hyperreactive.objects.create(file=file_instance, **hyperreactive_data)
 
-
-                    elif 'ligandable' in csv_filename and (Ligandable.objects.exists() == False):
+                    # Process ligandable file
+                    elif 'ligandable' in csv_filename and not Ligandable.objects.exists():
                         for row in reader:
                             known_fields = {field.name for field in Ligandable._meta.get_fields()}
                             ligandable_data = {}
@@ -77,19 +81,14 @@ class Command(BaseCommand):
                                     new_cols[key] = float(value) if value != '' else None
                             Ligandable.objects.create(file=file_instance,**ligandable_data, datasets = datasets, compounds = new_cols)
 
-
-
-                    if 'redox' in csv_filename and (Redox.objects.exists() == False):
+                    # Process redox file
+                    elif 'redox' in csv_filename and not Redox.objects.exists():
                         for row in reader:
                             redox_data = {}
-                            
                             for key, value in row.items():
                                 if key == "desai_percentage":
                                     value = float(value)
-
                                 redox_data[key.strip()] = value.strip()
-                            
                             Redox.objects.create(**redox_data, file=file_instance)
-                            
 
         self.stdout.write(self.style.SUCCESS('Successfully loaded initial data'))
