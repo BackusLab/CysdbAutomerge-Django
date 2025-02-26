@@ -5,3 +5,5 @@ __pycache__/
 blog/static/images/cysdb.jpg
 
 *.pyc
+.venv/
+.env
