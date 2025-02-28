@@ -5,6 +5,7 @@ TABLE_CHOICES = [
     ('ligandable', 'Ligandable'),
     ('hyperreactive', 'Hyperreactive'),
     ('identified', 'Identified'),
+    ('redox', 'Redox'),
 ]
 
 class UploadFileForm(forms.ModelForm):
