@@ -74,6 +74,8 @@ def process_identified_file(request, dataset, file):
 
     return render(request,'blog/configure_merge.html', {'cysdb_file': file, 'last_30': last_30, 'merged_dataset': merged, 'table': 'identified'})
 
+# TODO: figure out how to dynamically add table columns to the model definition (for all the mean calculations)
+# TODO: probably have to delete the new_means object, ideally we will not have to use it in the future
 def process_hyperreactive_file(request, dataset, file):
     decoded_dataset = dataset.read().decode('utf-8').splitlines()
     reader = csv.DictReader(decoded_dataset)
@@ -82,12 +84,15 @@ def process_hyperreactive_file(request, dataset, file):
         known_fields = {field.name for field in Hyperreactive._meta.get_fields()}
         hyperreactive_data = {}
         new_means = {}
+
+        # populate hyperreactive data field with the values from that row
         for key, value in row.items():
             if (key in known_fields):
                 hyperreactive_data[key] = value
             else:
                 new_means[key] = float(value) if value else 0.0
         
+        # if the object does not yet exist on the table
         if Hyperreactive.objects.filter(cysteineid=row['cysteineid']).exists() == False:
             cysdb_data = Hyperreactive.objects.create(
                 file=file,
@@ -96,7 +101,8 @@ def process_hyperreactive_file(request, dataset, file):
             )
 
             cysdb_data.save()
-            
+        
+        # if the object already exists in the dataset
         else:
             cysdb_data = Hyperreactive.objects.filter(cysteineid = row['cysteineid']).get()
             cysdb_data.new_means.update(new_means)
@@ -108,9 +114,7 @@ def process_hyperreactive_file(request, dataset, file):
             cysdb_data.hyperreactive='yes'
             cysdb_data.save()
 
-    new_means_keys = last_30.values_list('new_means', flat=True)
-    keys = {key for obj in new_means_keys for key in obj.keys()}
-
+    # TODO: incomplete, what if the file does not exist in the zip folder
     zip_path = os.path.join(settings.BASE_DIR, 'blog', 'v1p5_data', 'cysdb_master.zip') 
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         for csv_filename in zip_ref.namelist():
@@ -119,10 +123,10 @@ def process_hyperreactive_file(request, dataset, file):
             if 'hyperreactive' in csv_filename:
                 file_instance, __ = UploadFile.objects.get_or_create(upload=csv_filename)
 
-    last_30 = Hyperreactive.objects.order_by('id')[:50]
+    last_30 = Hyperreactive.objects.order_by('id')[:30]
     merged = Hyperreactive.objects.filter(file = file) | Hyperreactive.objects.filter(file = file_instance)
 
-    return render(request,'blog/configure_merge.html', {'cysdb_file': file, 'last_30': last_30, 'merged_dataset': merged, 'table': 'hyperreactive', 'new_means': keys})
+    return render(request,'blog/configure_merge.html', {'cysdb_file': file, 'last_30': last_30, 'merged_dataset': merged, 'table': 'hyperreactive', 'new_means': {}})
 
 def process_ligandable_file(request, dataset, file):
     decoded_dataset = dataset.read().decode('utf-8').splitlines()
