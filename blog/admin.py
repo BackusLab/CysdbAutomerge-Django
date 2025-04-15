@@ -7,9 +7,10 @@ class IdentifiedDisplay(admin.ModelAdmin):
     search_fields = ['proteinid', 'cysteineid']
 
 class HyperreactiveDisplay(admin.ModelAdmin):
+    # TODO: replace with actual name of mean
     list_display = ('proteinid', 'cysteineid', 'resid', 'weerapana_mean', 'palafox_mean', 'vinogradova_mean', 'cysdb_mean', 'cysdb_median', 
                     'cysdb_reactivity_category', 
-                    'hyperreactive', 'castellon_mean')
+                    'hyperreactive', 'castellon_mean', 'test_mean')
 
 admin.site.register(UploadFile)
 admin.site.register(Hyperreactive, HyperreactiveDisplay)

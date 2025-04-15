@@ -89,8 +89,11 @@ def process_hyperreactive_file(request, dataset, file):
 
         # populate hyperreactive data field with the values from that row
         for key, value in row.items():
-            if (key in known_fields):
-                hyperreactive_data[key] = value
+            if key in known_fields:
+                try:
+                    hyperreactive_data[key] = float(value)
+                except:
+                    hyperreactive_data[key] = value
             else:
                 new_means[key] = float(value) if value else 0.0
         
@@ -101,20 +104,47 @@ def process_hyperreactive_file(request, dataset, file):
                 **hyperreactive_data,
                 new_means = new_means
             )
-
             cysdb_data.save()
         
         # if the object already exists in the dataset
-        else:
-            cysdb_data = Hyperreactive.objects.filter(cysteineid = row['cysteineid']).get()
-            cysdb_data.new_means.update(new_means)
-            means = list(cysdb_data.new_means.values()) + list(filter(None, [cysdb_data.castellon_mean, cysdb_data.vinogradova_mean, cysdb_data.weerapana_mean, cysdb_data.palafox_mean]))
-            cysdb_data.cysdb_mean= statistics.mean(means)
-            cysdb_data.cysdb_median = statistics.median(means)
-            if len(means) > 1:
-                cysdb_data.cysdb_stdev = statistics.stdev(means)
+        # else:
+
+        # Update/Replace any means in database with the new data
+        update_means = {}
+        for key, value in hyperreactive_data.items():
+            if key.endswith('_mean') and "cysdb_" not in key and value:
+                update_means[key] = value
+        Hyperreactive.objects.filter(cysteineid=row['cysteineid']).update(**update_means)
+        
+        # Update mean, median, stddev and hyperreactive in database
+        cysdb_data = Hyperreactive.objects.filter(cysteineid = row['cysteineid']).get()
+        cysdb_data.new_means.update(new_means)
+        
+        # Collect all non-zero means
+        # TODO: replace with name of mean
+        combined_means = list(cysdb_data.new_means.values()) + list(filter(None, [cysdb_data.castellon_mean, cysdb_data.vinogradova_mean, cysdb_data.weerapana_mean, cysdb_data.palafox_mean, cysdb_data.test_mean]))
+
+        # If any mean < 2, set hyperreactive = yes
+        if combined_means and any(m < 2 for m in combined_means):
             cysdb_data.hyperreactive='yes'
-            cysdb_data.save()
+        
+        # Only calculate cysdb_mean/median/stddev if >1 mean
+        if len(combined_means) > 1:
+            cysdb_data.cysdb_mean = statistics.mean(combined_means)
+            cysdb_data.cysdb_median = statistics.median(combined_means)
+            cysdb_data.cysdb_stdev = statistics.stdev(combined_means)
+        
+        # Set reactivity category based on median
+        if cysdb_data.cysdb_median is None or cysdb_data.cysdb_median == 0:
+            cysdb_data.cysdb_reactivity_category = 'medium'
+        elif cysdb_data.cysdb_median < 2:
+            cysdb_data.cysdb_reactivity_category = 'high'
+        elif cysdb_data.cysdb_median > 5:
+            cysdb_data.cysdb_reactivity_category = 'low'
+        else:
+            cysdb_data.cysdb_reactivity_category = 'medium'
+            
+        cysdb_data.save()
 
     # TODO: incomplete, what if the file does not exist in the zip folder
     zip_path = os.path.join(settings.BASE_DIR, 'blog', 'v1p5_data', 'cysdb_master.zip') 

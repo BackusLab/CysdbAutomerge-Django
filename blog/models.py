@@ -48,6 +48,8 @@ class Hyperreactive(models.Model):
     cysdb_reactivity_category = models.CharField(max_length=5,)
     hyperreactive = models.CharField(max_length= 20,)
     castellon_mean = models.FloatField(null=True,)
+    # TODO: replace with actual mean name
+    test_mean = models.FloatField(null=True,)
     new_means = models.JSONField(default=dict)
 
 class Ligandable(models.Model):
