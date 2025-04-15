@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
 from .forms import UploadFileForm
-from .models import Identified, UploadFile, Hyperreactive, Ligandable
+from .models import Identified, UploadFile, Hyperreactive, Ligandable, Redox
 from django.http import HttpResponse
 import logging
 import csv
@@ -33,6 +33,8 @@ def handle_upload(request):
             return process_hyperreactive_file(request, dataset, file)
         elif table == 'ligandable':
             return process_ligandable_file(request, dataset, file)
+        elif table == 'redox':
+            return process_redox_file(request, dataset, file)
     else:
         return render(request, 'blog/homepage.html', {'form': form})
     
@@ -191,6 +193,42 @@ def process_ligandable_file(request, dataset, file):
 
     return render(request,'blog/configure_merge.html', {'cysdb_file': file, 'last_30': last_30, 'merged_dataset': merged, 'table': 'ligandable', 
                                                         'compounds': compounds_keys, 'datasets': datasets_keys})
+
+def process_redox_file(request, dataset, file):
+    decoded_dataset = dataset.read().decode('utf-8').splitlines()
+    reader = csv.DictReader(decoded_dataset)
+
+    for row in reader:
+        redox_data = {}
+        for key, value in row.items():
+            if key == "desai_percentage":
+                value = float(value)
+            redox_data[key.strip()] = value.strip()
+
+        if Redox.objects.filter(cysteineid=row['cysteineid']).exists() == False:
+            cysdb_data = Redox.objects.create(
+                file=file,
+                **redox_data
+            )
+            cysdb_data.save()
+            
+        else:
+            cysdb_data = Redox.objects.filter(cysteineid=row['cysteineid']).get()
+            # TODO: update fields if necessary
+            # cysdb_data.save()
+
+    zip_path = os.path.join(settings.BASE_DIR, 'blog', 'v1p5_data', 'cysdb_master.zip') 
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        for csv_filename in zip_ref.namelist():
+            if 'MACOSX' in csv_filename:
+                continue
+            if 'redox' in csv_filename:
+                file_instance, __ = UploadFile.objects.get_or_create(upload=csv_filename)
+
+    last_30 = Redox.objects.order_by('id')[:50]
+    merged = Redox.objects.filter(file = file) | Redox.objects.filter(file = file_instance)
+
+    return render(request,'blog/configure_merge.html', {'cysdb_file': file, 'last_30': last_30, 'merged_dataset': merged, 'table': 'redox'})
 
 def upload_file(request):
     if request.method == 'POST':
